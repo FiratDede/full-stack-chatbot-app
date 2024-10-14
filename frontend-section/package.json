@@ -1,0 +1,30 @@
+{
+  "name": "frontend-section",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build2": "next export -o outdir",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "cookies-next": "^4.2.1",
+    "jose": "^5.9.3",
+    "next": "14.2.13",
+    "react": "^18",
+    "react-activity": "^2.1.3",
+    "react-dom": "^18",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
