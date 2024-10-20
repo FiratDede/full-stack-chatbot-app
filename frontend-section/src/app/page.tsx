@@ -1,68 +1,67 @@
 "use client";
 import { serverUrl } from "@/constants";
-import Image from "next/image";
+import "./home.css"
 import { useEffect, useRef, useState } from "react";
 import useSWR from 'swr'
 import useFetch from "./hooks/useFetch";
+import useWindowSize from "./hooks/useWindowSize";
 import Link from "next/link";
+import UserSessionListDrawer from "./homePageComponents/UserSessionListDrawer/UserSessionListDrawer";
 
 export default function Home() {
-  const fetcher = (url: string) => fetch(url).then((res) => res.json());
+  const windowSize = useWindowSize();
 
-  const [answer, setAnswer] = useState<string>("");
+  const [question, setQuestion] = useState<string>("");
 
-  const [userSessionIds, setUserSessionIds] = useState<Array<string>>([])
+  const [userSessions, setUserSessions] = useState<Array<any>>([])
 
-  const { isLoading: getAllUserSessionIdsLoading, data: getAllUserSessionIdsData, sendRequest: sendGetAllUserSessionIds, error: getAllUserSessionIdsError } = useFetch({ withToken: true });
+  const { isLoading: getAllUserSessionsLoading, data: getAllUserSessionsData, sendRequest: sendGetAllUserSessionsData, error: getAllUserSessionsError } = useFetch({ withToken: true });
 
-  const { isLoading: getUserSessionLoading, data: userSession, sendRequest: sendGetUserSession, error: getUserSessionError } = useFetch({ withToken: true });
+  const { isLoading: getMessagesLoading, data: getMessagesResponse, sendRequest: sendGetMessages, error: getMessagesError } = useFetch({ withToken: true });
 
-  const { isLoading: giveAnswerLoading, data: giveAnswerData, sendRequest: sendGiveAnswer, error: giveAnswerError } = useFetch({ withToken: true });
-
+  const [messages, setMessages] = useState<Array<any>>([]);
 
   const { isLoading: createUserSessionLoading, data: createUserSessionData, sendRequest: sendCreateUserSession, error: createUserSessionError } = useFetch({ withToken: true });
 
 
-  const [selected, setSelected] = useState<any>(null);
+  const { isLoading: createMessageLoading, data: createMessageResponse, sendRequest: sendCreateMessage, error: createMessageError } = useFetch({ withToken: true });
 
 
+  const [selectedUserSessionId, setSelectedUserSessionId] = useState<string>("");
 
-  const isFirstFetch = useRef(true)
 
   const chatMessagesSectionScroll = useRef<HTMLDivElement | null>(null);
 
+
+  const questionInputDefaultClass = "min-w-56 my-2 py-4 px-2 flex-1  outline-none focus:border-amber-500 border-slate-400 border rounded"
+
+  const questionInputDisabledClass = "min-w-56 my-2 py-4 px-2 flex-1  outline-none border-slate-400 border rounded"
+
+  const questionInputErrorClass = "min-w-56 my-2 py-4 px-2 flex-1  outline-none border-red-400 border rounded"
+
+
+  const disabledSubmitButtonClass = "border border-slate-400 ml-2 p-4 text-slate-400 rounded";
+
+  const nonDisabledSubmitButtonClass = "border border-slate-400 ml-2 p-4 bg-amber-500 text-white rounded";
+
+  const [isUserSessionListOpen, setIsUserSessionListOpen] = useState<boolean>(true)
+
   useEffect(() => {
-    sendGetAllUserSessionIds(serverUrl + "/userSession/all/ids", "GET", {})
+    sendGetAllUserSessionsData(serverUrl + "/userSession/all", "GET", {})
   }, [])
-  useEffect(() => {
-    if (userSession) {
-      setSelected(userSession)
-    }
 
-  }, [userSession])
-
-  useEffect(() => {
-    if (giveAnswerData) {
-      setSelected((prev: any) => {
-        const newSelected = { ...prev }
-        newSelected.questionsAndAnswers = [...newSelected.questionsAndAnswers, giveAnswerData.formattedAnswer, giveAnswerData.newQuestion]
-
-        return newSelected
-      })
-
-    }
-
-  }, [giveAnswerData])
 
   useEffect(() => {
     if (createUserSessionData) {
-      setUserSessionIds((prev: any) => {
+      setUserSessions((prev: any) => {
         const newUserSessionIds = [createUserSessionData, ...prev]
         return newUserSessionIds
       })
+      setSelectedUserSessionId(createUserSessionData._id)
     }
-
   }, [createUserSessionData])
+
+
 
 
   useEffect(() => {
@@ -70,91 +69,124 @@ export default function Home() {
       chatMessagesSectionScroll.current.scrollTo(0, chatMessagesSectionScroll.current.scrollHeight);
     }
 
-  }, [selected])
+  }, [messages])
+
 
   useEffect(() => {
-    if (getAllUserSessionIdsData) {
-      setUserSessionIds(getAllUserSessionIdsData)
+    if (getAllUserSessionsData) {
+      setUserSessions(getAllUserSessionsData)
     }
 
-  }, [getAllUserSessionIdsData])
+  }, [getAllUserSessionsData])
+
+  useEffect(() => {
+    if (getMessagesResponse) {
+      setMessages(getMessagesResponse)
+    }
+  },
+    [getMessagesResponse])
+
+  useEffect(() => {
+    if (createMessageResponse && selectedUserSessionId === createMessageResponse.userSessionId) {
+
+      setMessages((prev: any) => {
+        const newMessages = [...prev, createMessageResponse]
+        return newMessages;
+      })
+      console.log("selectedUserSessionId: " + createMessageResponse.userSessionId)
+    }
+
+  }, [createMessageResponse])
+
+  useEffect(() => {
+    if (selectedUserSessionId !== "") {
+      sendGetMessages(serverUrl + "/message/all?userSessionId=" + selectedUserSessionId, "GET", {})
+    }
+  }, [selectedUserSessionId])
 
   return (
     <div className="flex h-screen  background-white-500 ">
-      <div className="flex flex-col border-2 py-3 px-1">
-        <button className="self-end" onClick={(e) => {
-          sendCreateUserSession(serverUrl + "/userSession", "POST", {})
-        }}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 ">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
 
-        <div className="flex flex-col flex-1">
+      {
+        (!isUserSessionListOpen) ?
+          <button className="m-2 self-start" onClick={(e) => {
+            setIsUserSessionListOpen(!isUserSessionListOpen)
+          }} >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+            </svg>
 
-          {
-            userSessionIds?.map((userSessionId: any, index: number) => {
+          </button>
+          :
+          <div></div>
+      }
+      <UserSessionListDrawer isUserSessionListOpen={isUserSessionListOpen} setIsUserSessionListOpen={setIsUserSessionListOpen} selectedUserSessionId={selectedUserSessionId} setSelectedUserSessionId={setSelectedUserSessionId}
+        sendCreateUserSession={sendCreateUserSession} userSessions={userSessions}
+      />
 
-              return (
-                <button onClick={(e) => {
-                  sendGetUserSession(serverUrl + "/userSession?id=" + userSessionId, "GET", {})
+      <div className="flex flex-col flex-1 relative" >
+        {
+          (isUserSessionListOpen && windowSize.width !== undefined && windowSize.width <= 500) ?
+            <div className="flex-1 bg-black/60 absolute h-full w-full">
+            </div>
 
-                }}>
+            : <div></div>
+        }
 
-                  <div className={(userSessionId !== selected?._id) ? "p-2 border-b-2 border-slate-300 	" : "p-2 border-b-2 border-white bg-amber-500 text-white"} key={userSessionId}>User Session {userSessionIds.length - index}</div>
+        <div className="flex-1 flex flex-col self-center w-full overflow-auto" ref={chatMessagesSectionScroll}>
+          <div className="flex-1 flex flex-col self-center w-full md:w-3/4">
 
-                </button>
-              )
-            })
-          }
+            {
+              (selectedUserSessionId === "")
+                ?
+                <span className="text-lg mt-3 text-center">
+                  Select an existing user session or create new one by pressing plus button
+                </span>
+                :
+                <div></div>
+            }
+
+            {
+              messages.map((element: any) => {
+                if (element.owner === "chatbot") {
+                  return <div key={element.id} className="self-start bg-amber-500 rounded text-white text-md md:text-lg p-2 my-3 w-2/4">
+                    <div>Chatbot:</div>
+                    {element["content"]}
+                  </div>
+                }
+                else if (element.owner === "user") {
+                  return <div key={element.id} className="self-end rounded text-black text-md md:text-lg p-2 my-3 w-2/4 border border-slate-400" >
+                    <div>You:</div>
+                    {element["content"]}
+                  </div>
+                }
+
+              })
+            }
+          </div>
+
+
         </div>
-        <Link href="/logout" className="self-start">Logout</Link>
-
-      </div>
-      <div className="flex flex-col flex-1">
-
-        <div className="flex-1 flex flex-col self-center w-full md:w-2/4   overflow-auto" ref={chatMessagesSectionScroll}>
-          {
-            (selected === null)
-              ?
-              <span className="text-lg mt-3 text-center">
-                Select an existing user session or create new one by pressing plus button
-              </span>
-              :
-              <div></div>
-          }
-
-          {
-            selected?.questionsAndAnswers.map((element: any) => {
-              if (element.kind === "Answer") {
-
-                return <div className="self-start bg-amber-500 rounded text-white text-md md:text-lg p-2 my-3 w-2/4">{element["content"]}</div>
-              }
-              else if (element.kind === "Question") {
-                return <div className="self-end rounded text-black text-md md:text-lg p-2 my-3 w-2/4 border border-slate-400" >{element["content"]}</div>
-              }
-
-            })
-          }
-
-        </div>
-        <form className="flex justify-center  items-center"
+        <form className="flex justify-center  items-center "
           onSubmit={(e) => {
             e.preventDefault();
-            if (selected) {
-              sendGiveAnswer(serverUrl + "/userSession/giveAnswer", "PUT", { answer: answer, userSessionId: selected._id })
-              setAnswer("")
+            if (!createMessageLoading && selectedUserSessionId !== "" && question.trim() !== "") {
+              const questionVal: string = question;
+              sendCreateMessage(serverUrl + "/message", "POST", { userSessionId: selectedUserSessionId, question: questionVal })
+
+              setMessages((prev: any) => {
+                const newMessages = [...prev, { content: questionVal, owner: "user" }]
+                return newMessages;
+              })
+              setQuestion("")
             }
           }}>
           <div className="flex justify-center items-center w-2/4">
-            <input className="min-w-56 my-2 py-4 px-2 flex-1  outline-none focus:border-amber-500 border-slate-400 border rounded" placeholder="Enter your answer" value={answer} onChange={(e) => { setAnswer(e.target.value) }} />
-            <button type="submit" className="border border-slate-400 ml-2 p-4 bg-amber-500 text-white rounded" >Send</button>
-
+            <input disabled={createMessageLoading} className={(createMessageLoading) ? questionInputDisabledClass : questionInputDefaultClass} placeholder="Enter your question" value={question} onChange={(e) => { setQuestion(e.target.value) }} />
+            <button type="submit" disabled={createMessageLoading} className={(createMessageLoading) ? disabledSubmitButtonClass : nonDisabledSubmitButtonClass}>Send</button>
           </div>
-
         </form>
       </div>
-
     </div>
   );
 }

@@ -1,9 +1,7 @@
-import { ObjectId, Query } from "mongoose";
-import UserSession, { IUserSession } from "../models/UserSession";
-import questions from "../constants/questions";
-
-
+import { Message, UserSession } from "../models";
+import { IUserSession } from "../interfaces/IUserSession";
 import { NextFunction, Request, Response } from "express";
+import { MessageOwner } from "../enums/MessageOwner";
 
 export async function getUserSession(req: Request, res: Response, next: NextFunction) {
     const userId: String | undefined = req.user?.id
@@ -38,35 +36,13 @@ export async function createUserSession(req: Request, res: Response, next: NextF
     const userId: String | undefined = req.user?.id
 
     const newUserSession = await UserSession.create({userId: userId})
+
+    const newMessage = await Message.create({content: "Welcome! I am your chatbot. You can ask me anything.",
+        userSessionId: newUserSession.id,
+        owner: MessageOwner.ChatBot
+    })
     
     
-    return res.send(newUserSession.id)
-
-}
-export async function createQuestionAndSavePreviousAnswer(req: Request, res: Response, next: NextFunction) {
-    const userId: String | undefined = req.user?.id
-    const { answer, userSessionId } = req.body;
-    let userSession: IUserSession | null = await UserSession.findOne({_id:userSessionId, userId: userId})
-    if(userSession){
-        let formattedAnswer = {kind: "Answer",content: answer}
-        let newQuestion = {kind: "Question", content: questions[Math.ceil(userSession.questionsAndAnswers.length / 2 )]}
-        userSession.questionsAndAnswers.push(formattedAnswer)
-        userSession.questionsAndAnswers.push(newQuestion)
-
-      
-
-       await userSession.save();
-
-
-       return res.json({newQuestion,formattedAnswer});
-        
-    }
-    else{
-        throw Error("Error!")
-    }
-
-
-
-    
+    return res.send(newUserSession)
 
 }

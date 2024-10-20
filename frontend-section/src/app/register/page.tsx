@@ -30,7 +30,7 @@ export default function Register() {
     return (
         <div className="flex flex-wrap justify-center md:justify-start items-center">
             <div className="flex flex-col  lg:ml-4 mt-2 self-start ">
-                <InfoBox isLoading={isLoading} message={data?.message} errorMessage={error?.message} messageTextClass="" errorMessageTextClass="" />
+                <InfoBox isLoading={isLoading} message={data?.message} errorMessage={error} messageTextClass="" errorMessageTextClass="" />
                 <h2 className="text-amber-500 text-center text-2xl font-semibold mb-2">Register</h2>
                 <div className="flex my-2 items-center">
                     <label htmlFor="username" className="w-20">Username:</label> <input type="text" id="username" name="username" value={username} onChange={(e) => { setUsername(e.target.value) }} className="ml-2 outline-none focus:border-amber-500 border-2 p-1" />

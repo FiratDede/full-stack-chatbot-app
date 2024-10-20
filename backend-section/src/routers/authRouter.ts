@@ -1,10 +1,11 @@
-import express from "express";
+import express, { Router } from "express";
 import { register,login, silenceLogin } from "../controllers/authController";
-var router = express.Router();
+import { catchErrorWrapper } from "../helpers/errorHelpers";
+var router: Router = express.Router();
 
-router.post("/register",register)
+router.post("/register",catchErrorWrapper(register))
 
-router.post("/login",login)
+router.post("/login",catchErrorWrapper(login))
 
 router.get("/silenceLogin",silenceLogin)
 
