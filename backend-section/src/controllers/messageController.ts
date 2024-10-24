@@ -22,24 +22,25 @@ export async function insertMessage(req: Request, res: Response, next: NextFunct
 
     await Message.create({ content: question, userSessionId, owner: MessageOwner.User })
 
+    let oldMessages= await Message.find({userSessionId, },"content")
+
+   const questionWithPreviousQuestionsAndAnswers  = oldMessages.reduce((accumulator: string, currentValue)=>{
+        return accumulator + currentValue.content  + "\n"
+    },"")
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = question;
+    const prompt = questionWithPreviousQuestionsAndAnswers;
 
     const result = await model.generateContent(prompt);
 
-    const answer: string = result.response.text();
-
+    const answer: string = result.response.text() + "\n";
 
     const newMessage: IMessage  = await Message.create({ content: answer, userSessionId, owner: MessageOwner.ChatBot, })
 
-    
-    // console.log(answer);
     res.status(200).send(newMessage);
     return;
-
 }
 
 export async function getAllMessages(req: Request, res: Response, next: NextFunction) {
